@@ -16,6 +16,7 @@
 #include "ECU_Tras_SensVelocidade.h"
 #include "ECU_Tras_CAN_Deploying.h"
 #include "ECU_Tras_Peripheral_Deploying.h"
+#include "ECU_Tras_Comb.h"
 
 
 //********************************************************************************
@@ -41,6 +42,7 @@ void setup(){
   #ifdef ENABLE_PERIPHERAL_COMMUNICATION 
     velocidade_meas_config();     //configura medição de velocidade
     sens_pressao_meas_config();   //configura medição de pressão
+    ecu_tras_comb_config_input_pins();
   #endif
 
   #ifdef ENABLE_CAN_COMMUNICATION
@@ -108,9 +110,11 @@ void loop(){
   #ifdef ENABLE_PERIPHERAL_DEPLOYING
     //Leitura dos periféricos
     #ifdef ENABLE_SERIAL_COMMUNICATION
-      Serial.println(ler_adc(), HEX);
+      /*Serial.println(ler_adc(), HEX);
       Serial.println(ler_timer_0_counter(), HEX);
-      Serial.println(ler_timer_0_status(), HEX);
+      Serial.println(ler_timer_0_status(), HEX);*/
+      //Serial.println(*pPIOC_PDSR, HEX);
+      Serial.println(ecu_tras_comb_calcula_nivel());
     #endif
 
   #endif

@@ -7,6 +7,15 @@
 #ifndef _ECU_TRAS_TIMER_H
 #define _ECU_TRAS_TIMER_H
 
+
+//********************************************************************************
+//                             #defines
+//********************************************************************************
+
+
+#include "ECU_Tras_PMC.h"
+
+
 //********************************************************************************
 //                             #defines
 //********************************************************************************
@@ -71,11 +80,12 @@ uint32_t *pTC_IER0 = (uint32_t*)(TC_IER0);
 uint32_t *pTC_IDR0 = (uint32_t*)(TC_IDR0);
 uint32_t *pTC_WPMR0 = (uint32_t*)(TC_WPMR0);
 
+/*
 //Ponteiros de registradores - PMC
 uint32_t *pPMC_PCER0 = (uint32_t*)(PMC_PCER0);
 uint32_t *pPMC_PCER1 = (uint32_t*)(PMC_PCER1);
 uint32_t *pPMC_PCSR0 = (uint32_t*)(PMC_PCSR0);
-uint32_t *pPMC_SR    = (uint32_t*)(PMC_SR);
+uint32_t *pPMC_SR    = (uint32_t*)(PMC_SR);*/
 
 uint32_t *pPIOB_PDR = (uint32_t*)(PIOB_PDR);
 uint32_t *pPIOB_ABSR = (uint32_t*)(PIOB_ABSR);
