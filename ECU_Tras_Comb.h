@@ -52,12 +52,12 @@ void ecu_tras_comb_config_input_pins(){
   ecu_tras_pio_enable_pin_controlling(PIN_NIVEL_6);
 
   //Configurando os pinos como entradas digitais:
-  ecu_tras_pio_config_input(PIN_NIVEL_1);
-  ecu_tras_pio_config_input(PIN_NIVEL_2);
-  ecu_tras_pio_config_input(PIN_NIVEL_3);
-  ecu_tras_pio_config_input(PIN_NIVEL_4);
-  ecu_tras_pio_config_input(PIN_NIVEL_5);
-  ecu_tras_pio_config_input(PIN_NIVEL_6);
+  ecu_tras_pioc_config_input(PIN_NIVEL_1);
+  ecu_tras_pioc_config_input(PIN_NIVEL_2);
+  ecu_tras_pioc_config_input(PIN_NIVEL_3);
+  ecu_tras_pioc_config_input(PIN_NIVEL_4);
+  ecu_tras_pioc_config_input(PIN_NIVEL_5);
+  ecu_tras_pioc_config_input(PIN_NIVEL_6);
 
   //Habilitando resistor de pull-up interno:
   ecu_tras_pio_enable_pullup_resistor(PIN_NIVEL_1);
@@ -94,7 +94,7 @@ uint8_t ecu_tras_comb_calcula_nivel(){
           else
             if(!nivel_6) return NIVEL_6;
             else
-              return 0xFF;
+              return 0;
     }
   }
   

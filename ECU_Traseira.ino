@@ -17,6 +17,7 @@
 #include "ECU_Tras_CAN_Deploying.h"
 #include "ECU_Tras_Peripheral_Deploying.h"
 #include "ECU_Tras_Comb.h"
+#include "ECU_Tras_Rpm.h"
 
 
 //********************************************************************************
@@ -43,6 +44,8 @@ void setup(){
     velocidade_meas_config();     //configura medição de velocidade
     sens_pressao_meas_config();   //configura medição de pressão
     ecu_tras_comb_config_input_pins();
+    //ecu_tras_rpm_config();
+    //enablePMCclock(TC2_ID);
   #endif
 
   #ifdef ENABLE_CAN_COMMUNICATION
@@ -90,6 +93,7 @@ void loop(){
       rpm = Rpm[random(0,20)];
       tempT = temp_tras[random(0,100)];
       pressT = calcula_pressao();
+      comb = ecu_tras_comb_calcula_nivel();
 
     #endif
 
@@ -114,7 +118,12 @@ void loop(){
       Serial.println(ler_timer_0_counter(), HEX);
       Serial.println(ler_timer_0_status(), HEX);*/
       //Serial.println(*pPIOC_PDSR, HEX);
+      
       Serial.println(ecu_tras_comb_calcula_nivel());
+      Serial.println(calcula_velocidade());
+      //Serial.println(ecu_tras_rpm_calcula_rpm());
+      Serial.println(*pPMC_SR, HEX);
+      Serial.print("\n");
     #endif
 
   #endif
@@ -131,6 +140,12 @@ void loop(){
 void TC0_Handler(void){
   ra_atual = captureRA(); //leitura do registrador RA
   tc_sr = *pTC_SR0; //leitura do registrador de status para permitir o processador retornara pra thread mode
+}
+
+//Timer2_ISR:
+void TC2_Handler(void){
+  ra2_atual = ecu_tras_timer_capture_ra_value(2);
+  tc_sr = ecu_tras_timer_get_status(2);
 }
 
 

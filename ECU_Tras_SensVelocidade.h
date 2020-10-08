@@ -52,8 +52,4 @@ uint16_t calcula_velocidade(){
 }
 
 
-
-
-
-
 #endif

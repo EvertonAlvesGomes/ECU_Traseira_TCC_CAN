@@ -23,11 +23,13 @@
 
 //Endereços de registradores:
 #define PIOC_PER                          0x400E1200        //PIO C enable register
+#define PIOC_PDR                          0x400E1204        //PIO C disable register
 #define PIOC_ODR                          0x400E1214        //PIO C output disable register
 #define PIOC_PUDR                         0x400E1260        //PIO C Pull up disable register
 #define PIOC_PUER                         0x400E1264        //PIO C Pull up enable register
 #define PIOC_PUSR                         0x400E1268        //PIO C Pull up status register
 #define PIOC_PDSR                         0x400E123C        //PIO C data status register
+#define PIOC_ABSR                         0x400E1270        //PIO C peripheral AB select register
 
 
 //********************************************************************************
@@ -35,11 +37,13 @@
 //********************************************************************************
 
 uint32_t *pPIOC_PER = (uint32_t*)(PIOC_PER);
+uint32_t *pPIOC_PDR = (uint32_t*)(PIOC_PDR);
 uint32_t *pPIOC_ODR = (uint32_t*)(PIOC_ODR);
 uint32_t *pPIOC_PUDR = (uint32_t*)(PIOC_PUDR);
 uint32_t *pPIOC_PUER = (uint32_t*)(PIOC_PUER);
 uint32_t *pPIOC_PUSR = (uint32_t*)(PIOC_PUSR);
 uint32_t *pPIOC_PDSR = (uint32_t*)(PIOC_PDSR);
+uint32_t *pPIOC_ABSR = (uint32_t*)(PIOC_ABSR);
 
 
 //********************************************************************************
@@ -58,11 +62,25 @@ void ecu_tras_pio_enable_pin_controlling(uint8_t pin){
 }
 
 
+void ecu_tras_pioc_disable_pio_controlling(uint8_t pin){
+  *pPIOC_PDR |= 1 << pin;
+}
+
 /* ecu_tras_pio_config_input(uint8_t pin)
  *  Configura o pino <pin> com entrada.
 */
-void ecu_tras_pio_config_input(uint8_t pin){
+void ecu_tras_pioc_config_input(uint8_t pin){
   *pPIOC_ODR |= 1 << pin;
+}
+
+
+void ecu_tras_pioc_select_peripheral(char periph, uint8_t pin){
+  if(periph == 'A' || periph == 'a'){
+    *pPIOC_ABSR &= ~(1 << pin);   //apaga o bit, configurando o pino para a função periférica A
+  }
+  if(periph == 'B' || periph == 'b'){
+    *pPIOC_ABSR |= 1 << pin;  //seta o bit, configurando o pino para a função periférica B
+  }
 }
 
 
