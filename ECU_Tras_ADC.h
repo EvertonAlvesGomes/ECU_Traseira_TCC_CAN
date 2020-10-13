@@ -92,6 +92,9 @@
 
 //Adc myADC; //struct ADC
 
+#include "ECU_Tras_PIO.h"
+#include "ECU_Tras_PMC.h"
+
 
 //********************************************************************************
 //                             #defines
@@ -102,7 +105,11 @@
 #define PRESCAL   0x0F      //Prescaler for ADC Clock
 #define TRACKTIM  0x01      //Tracking time
 #define TRANSFER  0x10      //Transfer time
-#define ADC_ID    37
+#define ADC_ID    37        //AD Peripheral ID
+#define ADC_CH0   0x00      //Channel 0 index
+#define ADC_CH10  0x0A      //Channel 10 index
+#define ADC_BASE_ADDRESS    0x400C0000  //Base registers address
+#define ADC_CH10_PIN        17          //Pin from Port B for ADC channel 10 (analong input 8) 
 
 //********************************************************************************
 //                             Registradores
@@ -144,24 +151,29 @@
 #define ADC_ACR     REG_ADC_ACR     //Analog Control Register
 #define ADC_WPMR    REG_ADC_WPMR    //Write Protect Mode Register
 #define ADC_WPSR    REG_ADC_WPSR    //Write Protect Status Register 
-#define PIOA_PDR    REG_PIOA_PDR    //PIO Disable Register
-#define PMC_PCER1   REG_PMC_PCER1   //PMC Peripheral Clock Enable Register 0
+#define ADC_CDR10   (ADC_BASE_ADDRESS+(0x50+4*0x0A))   //Channel Data Register 10
 
+#define PIOA_PDR    REG_PIOA_PDR    //PIO Disable Register
+//#define PMC_PCER1   REG_PMC_PCER1   //PMC Peripheral Clock Enable Register 0
+
+
+uint32_t *pADC_CDR10 = (uint32_t*)ADC_CDR10;
 
 //********************************************************************************
 //                             Funções
 //********************************************************************************
 
 
-void pioAdcConfig(){
+void ecu_tras_adc_pio_config(){
   PIOA_PDR |= 0x01 << 2; //Habilita o pino PA2 para ser controlado pelo periférico (ADC)
-  //PIOB_ABSR |= 0x01 << 25;  //Configura a função periférica do pino
+  ecu_tras_piob_disable_pin_controlling(ADC_CH10_PIN);  //Habilita o pino PB17 (canal 10, entrada analógica 8) para ser controlado pelo AD
 }
 
 void adcConfig(){
-  pioAdcConfig();
+  ecu_tras_adc_pio_config();
 
-  PMC_PCER1 |= (0x01 << ADC_ID); //habilita o clock do ADC no controlador PMC
+  //PMC_PCER1 |= (0x01 << ADC_ID); //habilita o clock do ADC no controlador PMC
+  ecu_tras_pmc_enable_periph_clock(ADC_ID);
   
   //ADC_WPMR = (ADC_WPKEY << 8) | (0x00 << 0); //Disables write protect
 
@@ -174,7 +186,10 @@ void adcConfig(){
   ADC_MR |= TRACKTIM << 24; //Setting tracking time
   ADC_MR |= TRANSFER << 28; //Setting transfer time
 
-  ADC_CHER |= 0x01 << 0;  //Enabling channel 0
+  #ifdef ENABLE_PERIPHERAL_DEPLOYING
+    ADC_CHER |= 0x01 << ADC_CH0;  //Habilitando canal 0 -> analog input 7
+    ADC_CHER |= 0x01 << ADC_CH10; //Habilitando canal 10 -> analog input 8
+  #endif
 
   ADC_CGR = 0; //All channels have gain 1
   ADC_COR |= 0x00 << 16; //Enable single ended mode for channel 0
@@ -182,8 +197,15 @@ void adcConfig(){
   ADC_EMR |= 0x01 << 24; //Enables TAG option 
   
   //ADC_CR = 1; //Resets the ADC simulating a hardware reset
-  ADC_CR |= 1 << 1; //Begins ADC conversion
+  //ADC_CR |= 1 << 1; //Begins ADC conversion
 }
+
+
+void ecu_tras_adc_enable_channel(uint8_t ch){
+  ADC_CHER |= 1 << ch;
+}
+
+
 
 uint16_t adcRead(){
   uint16_t current_value = 0;
@@ -198,6 +220,22 @@ uint16_t adcRead(){
   }
   //return ADC_LCDR;
   //return ADC_CDR0;
+}
+
+
+/*
+ * adcReadChannel(uint8_t ch)
+ * Retorna o valor do canal <ch> do ADC. Obrigatoriamente <ch> deve estar em formato hexadecimal.
+ */
+uint16_t adcReadChannel(uint8_t ch){
+  
+  uint32_t *pADC_channel_register = (uint32_t*)(ADC_BASE_ADDRESS + 0x50 + 4*ch);    //determinando o endereço do registrador do canal a ser lido
+  //uint32_t *pADC_channel_register = (uint32_t*)(ADC_BASE_ADDRESS + 0x50);    //determinando o endereço do registrador de dados do canal 0
+  ADC_CR |= 1 << 1;   //inicia a conversão
+  while(!(ADC_ISR & (1 << ch))){
+    ;   //aguarda o fim da conversão
+  }
+  return *pADC_channel_register;
 }
 
 #endif

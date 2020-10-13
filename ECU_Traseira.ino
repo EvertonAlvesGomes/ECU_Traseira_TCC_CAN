@@ -1,4 +1,4 @@
-/* ECU_Trasei.ino
+/* ECU_Traseira.ino
  *  Firmware da ECU Traseira do projeto CAN desenvolvido para a equipe CEFAST Baja.
  *  Autor: Everton A. Gomes
  *  Data: 19/09/2020
@@ -18,6 +18,7 @@
 #include "ECU_Tras_Peripheral_Deploying.h"
 #include "ECU_Tras_Comb.h"
 #include "ECU_Tras_Rpm.h"
+#include "ECU_Tras_Temp.h"
 
 
 //********************************************************************************
@@ -25,13 +26,14 @@
 //********************************************************************************
 
 uint16_t velT = 0;      //velocidade Traseira
-uint16_t tempT = 0 ;    //temperatura disco Traseiro
 float pressT = 0;       //pressão freio Traseiro
-uint16_t rpm = 0;       //rpm
 uint16_t comb = 0;      //combustível
 
 uint8_t tick = 0;       //temporizador de inicialização do CAN
 
+
+uint32_t tempo1=0, tempo2=0, tempo_atual=0;
+boolean estado = 0;
 
 
 void setup(){
@@ -43,16 +45,16 @@ void setup(){
   #ifdef ENABLE_PERIPHERAL_COMMUNICATION 
     velocidade_meas_config();     //configura medição de velocidade
     sens_pressao_meas_config();   //configura medição de pressão
-    ecu_tras_comb_config_input_pins();
-    //ecu_tras_rpm_config();
-    //enablePMCclock(TC2_ID);
+    ecu_tras_temp_meas_config();  //configura medição de temperatura
+    ecu_tras_comb_config_input_pins();  //configura pinos de entrada da medição de combustível
+    ecu_tras_rpm_config();  //configura medição de rpm
   #endif
 
   #ifdef ENABLE_CAN_COMMUNICATION
     startCan();   //inicializa interface CAN
     
     canConfigMailboxTx(&can_mailbox_tx_a, MB_TX_A_INDEX);       //configura mailbox tx
-    canConfigMailboxTx(&can_mailbox_tx_b, MB_TX_B_INDEX);       //configura mailbox rx
+    canConfigMailboxTx(&can_mailbox_tx_b, MB_TX_B_INDEX);       //configura mailbox tx
     canConfigMailboxRx(&can_mailbox_rx, MB_RX_INDEX, ID_MB_RX); //configura mailbox rx 
 
     //Aguarda inicialização do CAN
@@ -71,7 +73,6 @@ void setup(){
 
     can_enable_interrupts(ENABLE_MB2_INTERRUPT); //habilita apenas interrupção da mailbox 2, usada para recepção
   #endif
-  
 }
 
 void loop(){
@@ -90,8 +91,8 @@ void loop(){
     //Se CAN_DEPLOYING não estiver habilitado, usam-se valores calculados pelos periféricos para as grandezas medidas
     #ifndef ENABLE_CAN_DEPLOYING
       velT = calcula_velocidade();
-      rpm = Rpm[random(0,20)];
-      tempT = temp_tras[random(0,100)];
+      ecu_tras_rpm_calcula_rpm();
+      ecu_tras_temp_calcula_temp();
       pressT = calcula_pressao();
       comb = ecu_tras_comb_calcula_nivel();
 
@@ -99,7 +100,7 @@ void loop(){
 
     //Envio das mensagens CAN
     send_status_a = canSend(&can_mailbox_tx_a, ID_MB_TX_A, joinToSend(pressT,tempT), joinToSend(rpm,velT));
-    can_global_send_transfer_cmd(CAN0, (0x1u << MB_TX_A_INDEX));
+    can_global_send_transfer_cmd(CAN0, (0x1u  << MB_TX_A_INDEX));
     send_status_b = canSend(&can_mailbox_tx_b, ID_MB_TX_B, joinToSend(0,0), joinToSend(0,comb));
     can_global_send_transfer_cmd(CAN0, (0x1u << MB_TX_B_INDEX));
 
@@ -121,8 +122,8 @@ void loop(){
       
       Serial.println(ecu_tras_comb_calcula_nivel());
       Serial.println(calcula_velocidade());
-      //Serial.println(ecu_tras_rpm_calcula_rpm());
-      Serial.println(*pPMC_SR, HEX);
+      //Serial.println(*pPIOC_PDSR, HEX);
+      Serial.println(ecu_tras_rpm_calcula_rpm());
       Serial.print("\n");
     #endif
 
@@ -147,6 +148,7 @@ void TC2_Handler(void){
   ra2_atual = ecu_tras_timer_capture_ra_value(2);
   tc_sr = ecu_tras_timer_get_status(2);
 }
+
 
 
 //CAN_ISR: utilizada apenas para mailboxes de recepção

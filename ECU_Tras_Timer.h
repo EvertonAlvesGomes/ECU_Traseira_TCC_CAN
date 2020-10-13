@@ -9,11 +9,12 @@
 
 
 //********************************************************************************
-//                             #defines
+//                             #includes
 //********************************************************************************
 
 
 #include "ECU_Tras_PMC.h"
+#include "ECU_Tras_PIO.h"
 
 
 //********************************************************************************
@@ -31,7 +32,9 @@
 #define TIMER_CLOCK4  3           //Clock interno MCK/128
 #define TCCLKS        0           //Posição do bit TCCLKS no registrador TC_CMRx
 #define WPKEY         0x54494D    //PASSWD for Write Protection
-#define TC_BASE_ADDRESS 0x40080000
+#define TC2_BASE_ADDRESS 0x40088000
+#define TC2_CHANNEL   1           //Canal do timer utilizado
+#define LDRA_RISING   1 << 16
 
 
 //********************************************************************************
@@ -51,17 +54,17 @@
 #define TC_IMR0   0x4008002C  //TC Interrupt Mask Register
 #define TC_WPMR0  0x400800E4  //TC Write Protection Mode Register
 
-//Registradores - Timer 2
-#define TC2_CCR0  (TC_BASE_ADDRESS + 2*0x40 + 0x00)   //TC2 Channel Control Register
-#define TC2_CMR0  (TC_BASE_ADDRESS + 2*0x40 + 0x04)   //TC2 Channel Mode Register
-#define TC2_CV0   (TC_BASE_ADDRESS + 2*0x40 + 0x10)   //TC2 Counter Value
-#define TC2_RA0   (TC_BASE_ADDRESS + 2*0x40 + 0x14)   //TC2 Register A
-#define TC2_RB0   (TC_BASE_ADDRESS + 2*0x40 + 0x18)   //TC2 Register B
-#define TC2_RC0   (TC_BASE_ADDRESS + 2*0x40 + 0x1C)   //TC2 Register C
-#define TC2_SR0   (TC_BASE_ADDRESS + 2*0x40 + 0x20)   //TC2 Status Register
-#define TC2_IER0  (TC_BASE_ADDRESS + 2*0x40 + 0x24)   //TC2 Interrupt Enable Register
-#define TC2_IDR0  (TC_BASE_ADDRESS + 2*0x40 + 0x28)   //TC2 Interrupt Disable Regiser
-#define TC2_IMR0  (TC_BASE_ADDRESS + 2*0x40 + 0x2C)   //TC2 Interrupt Mask Register
+//Registradores - Timer 2, canal 1 (TIOA7)
+#define TC2_CCR1  (TC2_BASE_ADDRESS + TC2_CHANNEL*0x40 + 0x00)   //TC2 Channel Control Register
+#define TC2_CMR1  (TC2_BASE_ADDRESS + TC2_CHANNEL*0x40 + 0x04)   //TC2 Channel Mode Register
+#define TC2_CV1   (TC2_BASE_ADDRESS + TC2_CHANNEL*0x40 + 0x10)   //TC2 Counter Value
+#define TC2_RA1   (TC2_BASE_ADDRESS + TC2_CHANNEL*0x40 + 0x14)   //TC2 Register A
+#define TC2_RB1   (TC2_BASE_ADDRESS + TC2_CHANNEL*0x40 + 0x18)   //TC2 Register B
+#define TC2_RC1   (TC2_BASE_ADDRESS + TC2_CHANNEL*0x40 + 0x1C)   //TC2 Register C
+#define TC2_SR1   (TC2_BASE_ADDRESS + TC2_CHANNEL*0x40 + 0x20)   //TC2 Status Register
+#define TC2_IER1  (TC2_BASE_ADDRESS + TC2_CHANNEL*0x40 + 0x24)   //TC2 Interrupt Enable Register
+#define TC2_IDR1  (TC2_BASE_ADDRESS + TC2_CHANNEL*0x40 + 0x28)   //TC2 Interrupt Disable Regiser
+#define TC2_IMR1  (TC2_BASE_ADDRESS + TC2_CHANNEL*0x40 + 0x2C)   //TC2 Interrupt Mask Register
 #define TC2_WPMR  0x400880E4                          //TC Write Protection Mode Register
 
 
@@ -92,29 +95,35 @@ uint32_t *pTC_SR0 = (uint32_t*)(TC_SR0);
 uint32_t *pTC_IMR0 = (uint32_t*)(TC_IMR0);
 uint32_t *pTC_IER0 = (uint32_t*)(TC_IER0);
 uint32_t *pTC_IDR0 = (uint32_t*)(TC_IDR0);
+uint32_t *pTC_BCR = (uint32_t*)(0x400800C0);
 uint32_t *pTC_WPMR0 = (uint32_t*)(TC_WPMR0);
 
+uint32_t *pTC_CCR1 = (uint32_t*)(0x40080040);
+uint32_t *pTC_CMR1 = (uint32_t*)(0x40080044);
+uint32_t *pTC_CV1 = (uint32_t*)(0x40080050);
+uint32_t *pTC_SR1 = (uint32_t*)(0x40080060);
+
+//Ponteiros de registradores - Timer 1
+uint32_t *pTC1_CCR0 = (uint32_t*)(0x40084000);
+uint32_t *pTC1_BCR = (uint32_t*)(0x400840C0);
+uint32_t *pTC1_SR0 = (uint32_t*)(0x40084020);
+
 //Ponteiros de registradores - Timer_2
-uint32_t *pTC2_CCR0 = (uint32_t*)(TC2_CCR0);
-uint32_t *pTC2_CMR0 = (uint32_t*)(TC2_CMR0);
-uint32_t *pTC2_CV0 = (uint32_t*)(TC2_CV0);
-uint32_t *pTC2_RA0 = (uint32_t*)(TC2_RA0);
-uint32_t *pTC2_RB0 = (uint32_t*)(TC2_RB0);
-uint32_t *pTC2_RC0 = (uint32_t*)(TC2_RC0);
-uint32_t *pTC2_SR0 = (uint32_t*)(TC2_SR0);
-uint32_t *pTC2_IMR0 = (uint32_t*)(TC2_IMR0);
-uint32_t *pTC2_IER0 = (uint32_t*)(TC2_IER0);
-uint32_t *pTC2_IDR0 = (uint32_t*)(TC2_IDR0);
+uint32_t *pTC2_CCR0 = (uint32_t*)(0x40088000);
+uint32_t *pTC2_SR0 = (uint32_t*)(0x40084020);
+uint32_t *pTC2_CCR1 = (uint32_t*)(TC2_CCR1);
+uint32_t *pTC2_CMR1 = (uint32_t*)(TC2_CMR1);
+uint32_t *pTC2_CV1 = (uint32_t*)(TC2_CV1);
+uint32_t *pTC2_RA1 = (uint32_t*)(TC2_RA1);
+uint32_t *pTC2_RB1 = (uint32_t*)(TC2_RB1);
+uint32_t *pTC2_RC1 = (uint32_t*)(TC2_RC1);
+uint32_t *pTC2_SR1 = (uint32_t*)(TC2_SR1);
+uint32_t *pTC2_IMR1 = (uint32_t*)(TC2_IMR1);
+uint32_t *pTC2_IER1 = (uint32_t*)(TC2_IER1);
+uint32_t *pTC2_IDR1 = (uint32_t*)(TC2_IDR1);
+uint32_t *pTC2_BCR = (uint32_t*)(0x400880C0);
 uint32_t *pTC2_WPMR = (uint32_t*)(TC2_WPMR);
 
-/*
-//Ponteiros de registradores - PMC
-uint32_t *pPMC_PCER0 = (uint32_t*)(PMC_PCER0);
-uint32_t *pPMC_PCER1 = (uint32_t*)(PMC_PCER1);
-uint32_t *pPMC_PCSR0 = (uint32_t*)(PMC_PCSR0);
-uint32_t *pPMC_SR    = (uint32_t*)(PMC_SR);*/
-
-uint32_t *pPIOB_PDR = (uint32_t*)(PIOB_PDR);
 uint32_t *pPIOB_ABSR = (uint32_t*)(PIOB_ABSR);
 uint32_t *pPIOB_ODR = (uint32_t*)(PIOB_ODR);
 
@@ -139,6 +148,7 @@ void unableWriteProtection_timer0(){
 
 void unableWriteProtection_timer2(){
   //Timer 2:
+  
   *pTC2_WPMR |= (WPKEY << 8); //insere a chave de proteção de escrita
   *pTC2_WPMR &= ~(0x01 << 0); //desabilita a proteção de escrita
 }
@@ -199,23 +209,49 @@ void captureConfig(){
   //Timer_0
   *pTC_CMR0 |= 0x01 << 16; //RA é carregado quando é detectada uma borda de subida no sinal em TIOA
   *pTC_CMR0 |= 0x02 << 18; //RB é carregado quando é detectada uma borda de descida no sinal em TIOA
+  *pTC_CMR1 |= 0x01 << 16; //RA é carregado quando é detectada uma borda de subida no sinal em TIOA
+  *pTC_CMR1 |= 0x02 << 18; //RB é carregado quando é detectada uma borda de descida no sinal em TIOA  
 }
 
 
 void ecu_tras_timer_timer2_config(){
   ecu_tras_pmc_enable_periph_clock(TC2_ID);   //habilita o clock do timer 2
-
-  *pTC2_CCR0 |= CLKEN; //seta o bit CLKEN para habilitar o clock
-  *pTC2_CCR0 |= 0x01 << 2; //software trigger
+  
+  ecu_tras_pioc_disable_pio_controlling(28);
+  ecu_tras_pioc_select_peripheral('B', 28);
+  ecu_tras_pioc_config_input(28);
+  
+  *pTC2_CCR0 = 5;
   unableWriteProtection_timer2();
-  *pTC2_CMR0 |= CAPT; //configura o TC para modo waveform
-  *pTC2_CMR0 |= TIMER_CLOCK1 << TCCLKS; //seleciona prescaler
+  *pTC2_CCR1 = 5;
+  *pTC2_BCR = 1;
+  
+  *pTC2_CMR1 |= CAPT; //configura o TC para modo captura
+  *pTC2_CMR1 |= TIMER_CLOCK3 << TCCLKS; //seleciona prescaler
+  *pTC2_CMR1 |= LDRA_RISING;
 
   //Configurando interrupção para leitura do sinal:
-  NVIC_EnableIRQ(TC2_IRQn); //habilita interrupção do timer 2
-  NVIC_SetPriority(TC2_IRQn, 15); //configura nível de prioridade
-  *pTC2_IER0 |= 1 << 5; //Habilitando interrupção por RA loading
-  *pTC2_IDR0 &= ~(1 << 5); //apaga o bit que desabilita a interrupção por RA loading - canal 0
+//  NVIC_EnableIRQ(TC2_IRQn); //habilita interrupção do timer 2
+//  NVIC_SetPriority(TC2_IRQn, 15); //configura nível de prioridade
+//  *pTC2_IER1 |= 1 << 5; //Habilitando interrupção por RA loading
+//  *pTC2_IDR1 &= ~(1 << 5); //apaga o bit que desabilita a interrupção por RA loading - canal 0
+}
+
+void ecu_tras_timer_enable_all_timers(){
+  //Enable PMC clock
+  ecu_tras_pmc_enable_periph_clock(TC0_ID);
+  ecu_tras_pmc_enable_periph_clock(TC1_ID);
+  ecu_tras_pmc_enable_periph_clock(TC2_ID);
+
+  //Activate clock:
+  *pTC_CCR0 |= 1;
+  *pTC1_CCR0 |= 1;
+  *pTC2_CCR0 |= 1;
+
+  //Restart clock by software trigger:
+  *pTC_BCR = 1;
+  *pTC1_BCR = 1;
+  *pTC2_BCR = 1;
 }
 
 /* void captureRA()
@@ -229,14 +265,14 @@ uint32_t captureRA(){
 uint32_t ecu_tras_timer_capture_ra_value(uint8_t timer_index){
   switch(timer_index){
     case 0 : return *pTC_RA0;
-    case 2 : return *pTC2_RA0;
+    case 2 : return *pTC2_RA1;
   }
 }
 
 uint32_t ecu_tras_timer_get_status(uint8_t timer_index){
     switch(timer_index){
       case 0 : return *pTC_SR0;
-      case 2 : return *pTC2_SR0;
+      case 2 : return *pTC2_SR1;
     }
 }
 

@@ -44,12 +44,12 @@ void ecu_tras_comb_config_input_pins(){
   ecu_tras_pio_init();
   
   //Configurando os pinos como I/O:
-  ecu_tras_pio_enable_pin_controlling(PIN_NIVEL_1);
-  ecu_tras_pio_enable_pin_controlling(PIN_NIVEL_2);
-  ecu_tras_pio_enable_pin_controlling(PIN_NIVEL_3);
-  ecu_tras_pio_enable_pin_controlling(PIN_NIVEL_4);
-  ecu_tras_pio_enable_pin_controlling(PIN_NIVEL_5);
-  ecu_tras_pio_enable_pin_controlling(PIN_NIVEL_6);
+  ecu_tras_pioc_enable_pin_controlling(PIN_NIVEL_1);
+  ecu_tras_pioc_enable_pin_controlling(PIN_NIVEL_2);
+  ecu_tras_pioc_enable_pin_controlling(PIN_NIVEL_3);
+  ecu_tras_pioc_enable_pin_controlling(PIN_NIVEL_4);
+  ecu_tras_pioc_enable_pin_controlling(PIN_NIVEL_5);
+  ecu_tras_pioc_enable_pin_controlling(PIN_NIVEL_6);
 
   //Configurando os pinos como entradas digitais:
   ecu_tras_pioc_config_input(PIN_NIVEL_1);

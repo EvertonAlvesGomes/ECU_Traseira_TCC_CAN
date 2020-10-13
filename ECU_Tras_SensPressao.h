@@ -12,6 +12,7 @@
 //********************************************************************************
 
 #define ADC_RANGE       4096      //Range do ADC de 12 bits
+#define ADC_PRESS_CHANNEL     0         //Canal do AD a ser utilizado pelo sensor de pressão
 
 //********************************************************************************
 //                             #includes
@@ -31,10 +32,11 @@ float pressao=0;
 
 void sens_pressao_meas_config(){
   adcConfig();
+  ecu_tras_adc_enable_channel(ADC_PRESS_CHANNEL);
 }
 
 float calcula_pressao(){
-  pressao = 12.5*(((float)adcRead())/ADC_RANGE - 0.1);
+  pressao = 10*12.5*(((float)adcReadChannel(ADC_CH0))/ADC_RANGE - 0.1);
   return pressao;
 }
 

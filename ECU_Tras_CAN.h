@@ -121,13 +121,13 @@ void data_monitoring(){
 void can_monitoring(){
   //Mailbox de transmissão:
   Serial.print("MB_TX_A: ");
-  Serial.print(can_mailbox_tx_a.ul_datal, HEX);
+  Serial.print(can_mailbox_tx_a.ul_datah, HEX);
   Serial.print(" ");
-  Serial.println(can_mailbox_tx_a.ul_datah, HEX);
+  Serial.println(can_mailbox_tx_a.ul_datal, HEX);
   Serial.print("MB_TX_B: ");
-  Serial.print(can_mailbox_tx_b.ul_datal, HEX);
+  Serial.print(can_mailbox_tx_b.ul_datah, HEX);
   Serial.print(" ");
-  Serial.println(can_mailbox_tx_a.ul_datah, HEX);
+  Serial.println(can_mailbox_tx_a.ul_datal, HEX);
 
   //Mailboxes de recepção:
   Serial.print("MB_RX: ");

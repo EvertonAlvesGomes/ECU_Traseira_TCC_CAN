@@ -1,12 +1,12 @@
-/* ECU_Tras_SensPressao.h
+/* ECU_Tras_SensVelocidade.h
  *  Implementação da leitura do sensor de velocidade.
  *  Autor: Everton A. Gomes
  *  Data: 19/09/2020
 */
 
 
-#ifndef _ECU_TRAS_SENSVELOCIDADE_
-#define _ECU_TRAS_SENSVELOCIDADE_
+#ifndef _ECU_TRAS_SENSVELOCIDADE_H
+#define _ECU_TRAS_SENSVELOCIDADE_H
 
 
 //********************************************************************************

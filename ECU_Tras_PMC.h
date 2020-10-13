@@ -37,7 +37,13 @@ uint32_t *pPMC_SR    = (uint32_t*)(PMC_SR);
  * Habilita o clock do periférico de PID (Peripheral ID) <pid>.
  */
 void ecu_tras_pmc_enable_periph_clock(uint8_t id){
-  *pPMC_PCER0 |= 1 << id;
+  if(id >= 0 && id <= 31){
+    *pPMC_PCER0 |= 1 << id;    
+  }
+  if(id >= 32){
+    *pPMC_PCER1 |= 1 << id;
+  }
+
 }
 
 

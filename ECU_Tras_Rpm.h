@@ -6,7 +6,13 @@
 
 /* Pinagem:
  * Pino digital 3 -> sinal de entrada
- * Pino digital 3 -> PC28, Peripheral B, Signal TIOA7, TC2
+ * Pino digital 3 -> PC28
+ */
+
+/* Descrição:
+ * Sinal digital é aplicado no pino 3 do Arduino. Usa-se uma interrupção por mudança de nível digital
+ * do perifério PIO Controller para sinalizar que o millis() deve ser disparado. Após contagem de tempo
+ * do millis(), calcula-se a frequência do sinal
  */
 
 #ifndef _ECU_TRAS_RPM_H
@@ -35,7 +41,8 @@
 //********************************************************************************
 
 uint32_t ra2_atual, ra2_prev, tc2_sr, result2;
-
+uint8_t pin_state = 0, pin_state_prev = 0;
+uint32_t t1=0, t2=0, rpm=0;
 
 
 //********************************************************************************
@@ -45,29 +52,28 @@ uint32_t ra2_atual, ra2_prev, tc2_sr, result2;
 void ecu_tras_rpm_config(){
   /*
    * Configuração do pino de entrada:
-   * - Desabilita o controle PIO sobre o pino, habilitando o controle pelo periférico Timer 2
-   * - Seleciona a função periférica B
+   * - Habilita o controle PIO sobre o pino
    * - Configura o pino como entrada
+   * - Habilita interrupção do PIOC
+   * - Habilita interrupção por input change no pino de entrada do sinal
    */
-  ecu_tras_pioc_disable_pio_controlling(RPM_PIN);
-  ecu_tras_pioc_select_peripheral('B', RPM_PIN);
-  ecu_tras_pioc_config_input(RPM_PIN);    
-
-  ecu_tras_timer_timer2_config();
+  ecu_tras_pioc_enable_pin_controlling(RPM_PIN);
+  ecu_tras_pioc_config_input(RPM_PIN);
+//  ecu_tras_pioc_interrupt_enable(15);
+//  ecu_tras_pioc_enable_interrupt_pin(RPM_PIN);    
 }
 
-/* uint16_t calculaVelocidade()
- *  Retorna o valor da velocidade atual.
-*/
-uint16_t ecu_tras_rpm_calcula_rpm(){
-  
-  if(ra2_atual != ra2_prev){
-    result2 = ra2_atual - ra2_prev;
-    ra2_prev = ra2_atual;
+
+uint32_t ecu_tras_rpm_calcula_rpm(){
+  pin_state = ecu_tras_pioc_read_pin(RPM_PIN);
+  if(pin_state == 1 && pin_state_prev == 0){
+    //Se detectada borda de subida
+    t2 = millis();
+    rpm = (1000/(t2 - t1))*90; //calcula o rpm
+    t1 = t2; //atualiza o tempo
   }
-  return 42e6/result2;
-  //return 1/(result*2/84e6); //retorna o valor da velocidade
-  
+  pin_state_prev = pin_state; //atualiza o estado do pino
+  return rpm;
 }
 
 
